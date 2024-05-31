@@ -1,0 +1,72 @@
+SELECT 'start' AS "starttime",SUM(bytes_transferred) AS bytecount, SUM(packets) AS packetcount, srcaddr, srcport, dstaddr, dstport, security_group_ids, network_acl_id
+FROM vpc_flow_logs WHERE action='REJECT'
+GROUP BY 'start',srcaddr, srcport, dstaddr, dstport, security_group_ids, network_acl_id
+ORDER BY bytecount DESC
+Limit 20
+
+
+SELECT 'start' AS "StartTime",srcaddr, srcport, dstaddr, dstport
+FROM vpc_flow_logs WHERE action='ACCEPT' AND dstaddr LIKE '8.8.%.%'
+GROUP BY 'start',srcaddr, srcport, dstaddr, dstport
+Limit 1000;
+
+CREATE EXTERNAL TABLE IF NOT EXISTS vpc_flow_logs (
+    version STRING,
+    account_id STRING,
+    action STRING,
+    bytes_transferred BIGINT,
+    dstaddr STRING,
+    dstport INT,
+    `end` BIGINT,
+    instance_id STRING,
+    interface_id STRING,
+    log_status STRING,
+    packets BIGINT,
+    pkt_dstaddr STRING,
+    pkt_srcaddr STRING,
+    protocol STRING,
+    srcaddr STRING,
+    srcport INT,
+    `start` BIGINT,
+    subnet_id STRING,
+    tcp_flags STRING,
+    vpc_id STRING,
+    log_type STRING,
+    security_group_ids STRING,
+    network_acl_id STRING
+)
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY '\t' 
+LINES TERMINATED BY '\n'
+LOCATION 's3://lambda-kinesis-line-oa-prod/vpc_flow_logs/enriched/'
+TBLPROPERTIES ('skip.header.line.count'='1');
+
+
+
+SELECT 
+    account_id, 
+    action, 
+    bytes_transferred, 
+    dstaddr, 
+    dstport, 
+    'end' AS "EndDate", 
+    instance_id, 
+    interface_id, 
+    log_status, 
+    packets, 
+    pkt_dstaddr, 
+    pkt_srcaddr, 
+    protocol, 
+    srcaddr, 
+    srcport, 
+    'start' AS "StartDate", 
+    subnet_id, 
+    tcp_flags, 
+    vpc_id, 
+    log_type,
+    security_group_ids,
+    network_acl_id
+FROM 
+    vpc_flow_logs
+LIMIT 50
+
